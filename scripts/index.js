@@ -3,21 +3,48 @@ const token = "981352635:AAGatP72r236mYcr7KAE6hBkWTVvXBFtmvQ";
 const bot = new TelegramBot(token, { polling: true });
 const DB = require("./database.js");
 global.bot = bot;
-require("./memory.js");
+require("./users.js");
+require("./usersSettings");
 
 const comands = {
-  help: ["/start", "/createUser"]
+  help: ["/help", "/createUser"],
+  help_for_users: [
+    "/startResending + id",
+    "/startResending",
+    "/setOption",
+    "/deleteUser",
+    "/stopResending"
+  ]
 };
 
 bot.onText(/\/start/, function start(msg) {
-  if (msg.text == "/start") {
-    const chatId = msg.chat.id;
-    let startComandsPack = comands.help.join("; \n");
-    bot
-      .sendMessage(chatId, "Hello!")
-      .then(sent =>
-        bot.sendMessage(chatId, "Commands list:" + "\n" + startComandsPack)
-      );
+  if (msg.text === "/start") {
+    if (msg.chat.type === "private") {
+      const chat = msg.chat.id;
+      let startComandsPack = comands.help.join("; \n");
+      bot
+        .sendMessage(chat, "Hello!")
+        .then(sent =>
+          bot.sendMessage(chat, "Commands list:" + "\n" + startComandsPack)
+        );
+    } else {
+      bot.sendMessage(msg.chat.id, "Only for private chats");
+    }
+  }
+});
+
+bot.onText(/\/help/, function start(msg) {
+  if (msg.chat.type === "private") {
+    const chat = msg.chat.id;
+    const usersData = DB.data.users;
+    if (!usersData[chat]) {
+      bot.sendMessage(chat, "First you have to create user");
+    } else {
+      let comandsPack = comands.help_for_users.join("; \n");
+      bot.sendMessage(chat, "Commands list:" + "\n" + comandsPack);
+    }
+  } else {
+    bot.sendMessage(msg.chat.id, "Only for private chats");
   }
 });
 
