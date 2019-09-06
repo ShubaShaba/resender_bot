@@ -4,7 +4,8 @@ const bot = new TelegramBot(token, { polling: true });
 const DB = require("./database.js");
 global.bot = bot;
 require("./users.js");
-require("./usersSettings");
+require("./groups.js");
+require("./filter");
 
 const comands = {
   help: ["/help", "/createUser"],
@@ -54,7 +55,7 @@ bot.on("message", msg => {
     const ms = msg.message_id;
     const usersData = DB.data.users;
     if (usersData) {
-      Object.keys(usersData).map(user => {
+      Object.keys(usersData).forEach(user => {
         if (usersData[user][chat]) {
           if (usersData[user][chat].status) {
             if (usersData[user][chat].keywords) {

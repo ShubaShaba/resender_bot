@@ -7,7 +7,7 @@
     "forever": "^1.0.0",
     "fs": "0.0.1-security",
     "node-telegram-bot-api": "^0.30.0",
-    "nodemon": "^1.19.1"
+    "nodemon": "^1.19.2"
   },
   "devDependencies": {},
   "scripts": {
