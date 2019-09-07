@@ -2,7 +2,7 @@ const DB = require('./database');
 const utils = require('./utils');
 
 module.exports = function(bot) {
-  bot.onText(/^\/setOption .+$/, function(msg) {
+  bot.onText(/^\/setOption\s.+$/, function(msg) {
     if (!utils.checkPrivateChat(bot, msg)) return;
 
     let args = msg.text.split(/\s+/);
