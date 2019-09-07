@@ -6,8 +6,7 @@ module.exports = function(bot) {
     if (utils.checkPrivateChat(bot, msg)) {
       const user = msg.from.id;
       let groupId = msg.text.split(' ')[1];
-      let groupData = DB.data.users[user][groupId];
-      console.log(groupData, msg);
+      let groupData = DB.data[user][groupId];
       if (!groupData) {
         bot.sendMessage(user, 'Sorry i have no groups with this id');
       } else {

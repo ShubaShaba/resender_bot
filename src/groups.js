@@ -1,124 +1,68 @@
-const DB = require('./database.js');
+const DB = require('./database');
+const utils = require('./utils');
 
 module.exports = function(bot) {
-  function editMessage(newText, chatId, msgId, keyboard) {
+  function editMessage(chatId, msgId, newText, options) {
     bot.editMessageText(newText, {
       chat_id: chatId,
       message_id: msgId,
-      reply_markup: {
-        inline_keyboard: keyboard,
-      },
+      ...options,
     });
   }
 
-  function createGroupsKeyboard(list, key) {
-    let keyboard = [];
-
-    list.forEach(group => {
-      if (group) {
-        keyboard.push([
-          { text: group.title, callback_data: key + ' ' + group.id },
-        ]);
-      }
-    });
-    if (keyboard.length !== 0) {
-      return keyboard;
-    }
-  }
-
-  function initializeGroupsKeyboard(
-    user,
-    key,
-    msgIfListExist,
-    msgIfListNonExist,
-    messageType,
-    msgId,
-  ) {
-    let userData = DB.data.users;
-
-    Promise.all(
-      Object.keys(userData[user]).map(group =>
-        bot.getChat(group).then(
-          resolver => {
-            return resolver;
-          },
-          rejected => {
-            return null;
-          },
-        ),
+  function generateChatsKeyboardForUser(key, userId) {
+    return Promise.all(
+      Object.keys(DB.data[userId]).map(chatId =>
+        bot
+          .getChat(chatId)
+          .catch(() => null)
+          .then(group => [
+            { text: group.title, callback_data: key + ' ' + group.id },
+          ]),
       ),
-    ).then(result => {
-      let keyboard = createGroupsKeyboard(result, key);
-      if (keyboard) {
-        if (messageType === 'new') {
-          bot.sendMessage(user, msgIfListExist, {
-            reply_markup: {
-              inline_keyboard: keyboard,
-            },
-          });
-        } else if (messageType === 'edit') {
-          editMessage(msgIfListExist, user, msgId, keyboard);
-        }
-      } else {
-        if (messageType === 'new') {
-          bot.sendMessage(user, msgIfListNonExist);
-        } else if (messageType === 'edit') {
-          editMessage(msgIfListNonExist, user, msgId, []);
-        }
-      }
-    });
+    ).then(keyboard => keyboard.filter(row => row != null));
   }
-
-  // bot.onText(/\/startResending/, function(msg) {
-  //   if (msg.chat.type === "private") {
-  //     const user = msg.from.id;
-  //   }
-  // });
 
   bot.onText(/\/startResending (.+)/, function(msg) {
-    if (msg.chat.type === 'private') {
-      const user = msg.from.id;
-      let userData = DB.data.users[user];
-      if (!userData) {
-        bot.sendMessage(user, 'Sorry, first you MUST create user.');
-      } else {
-        let groupId = msg.text.split(' ')[1];
-        let promise = bot.getChat(groupId);
+    if (utils.checkPrivateChat(bot, msg)) {
+      const userId = msg.from.id;
+      let groupId = msg.text.split(' ')[1];
+      let promise = bot.getChat(groupId);
 
-        promise.then(
-          result => {
-            DB.addKey(['users', user, groupId]);
-            DB.data.users[user][groupId].status = true;
-            DB.write();
+      promise.then(
+        () => {
+          DB.addKey([userId, groupId]);
+          DB.data[userId][groupId].status = true;
+          DB.write();
 
-            bot.sendMessage(user, 'Done').then(func => {
-              bot.sendMessage(
-                user,
-                "Well the last part is setting keywords or phrases(if you want it). Enter '/setOption'",
-              );
-            });
-          },
-          rejected => {
+          bot.sendMessage(userId, 'Done').then(() => {
             bot.sendMessage(
-              user,
-              "Sorry i can't add this group to your resending list. Have you already added me there?",
+              userId,
+              "Well the last part is setting keywords or phrases(if you want it). Enter '/setOption'",
             );
-          },
-        );
-      }
+          });
+        },
+        () => {
+          bot.sendMessage(
+            userId,
+            "Sorry i can't add this group to your resending list. Have you already added me there?",
+          );
+        },
+      );
     }
   });
 
   bot.onText(/\/stopResending/, function(msg) {
     if (msg.chat.type === 'private') {
-      const user = msg.from.id;
-      initializeGroupsKeyboard(
-        user,
-        'GroupToRemove',
-        'Which group needs to be deleted from your user?',
-        "Sorry i can't find existant groups in your list.",
-        'new',
-        null,
+      const userId = msg.from.id;
+      generateChatsKeyboardForUser('GroupToRemove', userId).then(keyboard =>
+        bot.sendMessage(
+          userId,
+          keyboard.length > 0
+            ? 'Which group needs to be deleted from your list?'
+            : "Sorry i can't find existant groups in your list.",
+          { reply_markup: { inline_keyboard: keyboard } },
+        ),
       );
     }
   });
@@ -128,21 +72,23 @@ module.exports = function(bot) {
       return;
     }
     const msgId = query.message.message_id;
-    const user = query.message.chat.id;
-    const result = query.data.split(' ')[1];
+    const userId = query.message.chat.id;
+    const groupId = query.data.split(' ')[1];
 
-    const usersData = DB.data.users;
-    if (usersData[user][result]) {
-      delete usersData[user][result];
+    console.log(userId, groupId);
+    if (DB.data[userId][groupId]) {
+      delete DB.data[userId][groupId];
       DB.write();
 
-      initializeGroupsKeyboard(
-        user,
-        'GroupToRemove',
-        'Which group needs to be deleted from your user?',
-        'No more groups left.',
-        'edit',
-        msgId,
+      generateChatsKeyboardForUser('GroupToRemove', userId).then(keyboard =>
+        editMessage(
+          userId,
+          msgId,
+          keyboard.length > 0
+            ? 'Which group needs to be deleted from your list?'
+            : 'No more groups left.',
+          { reply_markup: { inline_keyboard: keyboard } },
+        ),
       );
     }
   });
