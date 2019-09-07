@@ -1,6 +1,6 @@
-const fs = require("fs");
+const fs = require('fs');
 
-const filename = "database.json";
+const filename = 'database.json';
 let data;
 
 function addKey(path) {
