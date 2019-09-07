@@ -147,6 +147,21 @@ module.exports = function(bot) {
     }
   });
 
+  let myUserId;
+  bot.getMe().then(user => {
+    myUserId = user.id;
+  });
+
+  bot.on('new_chat_members', function(msg) {
+    if (myUserId != null) {
+      if (msg.new_chat_members.find(member => member.id === myUserId)) {
+        bot.sendMessage(msg.chat.id, 'chat ID: `' + msg.chat.id + '`', {
+          parse_mode: 'Markdown',
+        });
+      }
+    }
+  });
+
   DB.addKey(['users']);
   DB.write();
 };

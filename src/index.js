@@ -1,14 +1,16 @@
 const TelegramBot = require('node-telegram-bot-api');
 const config = require('../config');
 const bot = new TelegramBot(config.token, { polling: true });
-const DB = require('./database.js');
-require('./users.js')(bot);
-require('./groups.js')(bot);
+
+const DB = require('./database');
+const utils = require('./utils');
+require('./users')(bot);
+require('./groups')(bot);
 require('./filter')(bot);
 
 const comands = {
   help: ['/help', '/createUser'],
-  help_for_users: [
+  helpForUsers: [
     '/startResending + id',
     '/startResending',
     '/setOption',
@@ -17,34 +19,28 @@ const comands = {
   ],
 };
 
-bot.onText(/\/start/, function start(msg) {
-  if (msg.text === '/start') {
-    if (msg.chat.type === 'private') {
-      const chat = msg.chat.id;
-      let startComandsPack = comands.help.join('; \n');
-      bot
-        .sendMessage(chat, 'Hello!')
-        .then(sent =>
-          bot.sendMessage(chat, 'Commands list:' + '\n' + startComandsPack),
-        );
-    } else {
-      bot.sendMessage(msg.chat.id, 'Only for private chats');
-    }
+bot.onText(/^\/start/, function start(msg) {
+  if (utils.checkPrivateChat(bot, msg)) {
+    const chat = msg.chat.id;
+    let startComandsPack = comands.help.join('; \n');
+    bot
+      .sendMessage(chat, 'Hello!')
+      .then(sent =>
+        bot.sendMessage(chat, 'Commands list:\n' + startComandsPack),
+      );
   }
 });
 
-bot.onText(/\/help/, function start(msg) {
-  if (msg.chat.type === 'private') {
+bot.onText(/^\/help/, function start(msg) {
+  if (utils.checkPrivateChat(bot, msg)) {
     const chat = msg.chat.id;
     const usersData = DB.data.users;
     if (!usersData[chat]) {
       bot.sendMessage(chat, 'First you have to create user');
     } else {
-      let comandsPack = comands.help_for_users.join('; \n');
+      let comandsPack = comands.helpForUsers.join('; \n');
       bot.sendMessage(chat, 'Commands list:' + '\n' + comandsPack);
     }
-  } else {
-    bot.sendMessage(msg.chat.id, 'Only for private chats');
   }
 });
 

@@ -1,8 +1,9 @@
-const DB = require('./database.js');
+const DB = require('./database');
+const utils = require('./utils');
 
 module.exports = function(bot) {
-  bot.onText(/\/createUser/, function(msg) {
-    if (msg.chat.type === 'private') {
+  bot.onText(/^\/createUser/, function(msg) {
+    if (utils.checkPrivateChat(bot, msg)) {
       const user = msg.from.id;
       DB.addKey(['users', user]);
       DB.write();
@@ -15,13 +16,11 @@ module.exports = function(bot) {
             "Now you can start receive message from diferent groups. Just enter '/startResending' or '/startResending + group id'",
           ),
         );
-    } else {
-      bot.sendMessage(msg.chat.id, 'Only for private chats');
     }
   });
 
-  bot.onText(/\/deleteUser/, function(msg) {
-    if (msg.chat.type === 'private') {
+  bot.onText(/^\/deleteUser/, function(msg) {
+    if (utils.checkPrivateChat(bot, msg)) {
       const user = msg.from.id;
       const usersData = DB.data.users;
       if (usersData[user]) {
@@ -29,8 +28,6 @@ module.exports = function(bot) {
         DB.write();
         bot.sendMessage(user, 'Your user was deleted.');
       }
-    } else {
-      bot.sendMessage(msg.chat.id, 'Only for private chats');
     }
   });
 

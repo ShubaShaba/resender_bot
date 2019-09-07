@@ -1,15 +1,17 @@
 const DB = require('./database.js');
+const utils = require('./utils');
 
 module.exports = function(bot) {
-  bot.onText(/\/setOption (.+)/, function(msg) {
-    if (msg.chat.type === 'private') {
+  bot.onText(/^\/setOption (.+)/, function(msg) {
+    if (utils.checkPrivateChat(bot, msg)) {
       const user = msg.from.id;
       let groupId = msg.text.split(' ')[1];
       let groupData = DB.data.users[user][groupId];
+      console.log(groupData, msg);
       if (!groupData) {
         bot.sendMessage(user, 'Sorry i have no groups with this id');
       } else {
-        let wordsArray = message.toLowerCase().split(' ');
+        let wordsArray = msg.text.toLowerCase().split(' ');
         for (let i = 0; i < 2; i++) {
           wordsArray.shift();
         }
