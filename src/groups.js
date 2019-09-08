@@ -1,12 +1,12 @@
-const DB = require('./database');
-const utils = require('./utils');
+const DB = require("./database");
+const utils = require("./utils");
 
 module.exports = function(bot) {
   function editMessage(chatId, msgId, newText, options) {
     bot.editMessageText(newText, {
       chat_id: chatId,
       message_id: msgId,
-      ...options,
+      ...options
     });
   }
 
@@ -18,9 +18,9 @@ module.exports = function(bot) {
           .getChat(chatId)
           .catch(() => null)
           .then(group => [
-            { text: group.title, callback_data: key + ' ' + group.id },
-          ]),
-      ),
+            { text: group.title, callback_data: key + " " + group.id }
+          ])
+      )
     ).then(keyboard => keyboard.filter(row => row != null));
   }
 
@@ -33,13 +33,13 @@ module.exports = function(bot) {
       bot.getChat(chatId).then(
         () => {
           DB.addKey([userId, chatId]);
-          DB.data[userId][chatId] = { status: true, keywords: [] };
+          DB.data[userId][chatId] = { status: true };
           DB.write();
 
-          bot.sendMessage(userId, 'Done').then(() => {
+          bot.sendMessage(userId, "Done").then(() => {
             bot.sendMessage(
               userId,
-              'You can also set keywords of interest using /setOption',
+              "You can also set keywords of interest using /setOption"
             );
           });
         },
@@ -47,32 +47,32 @@ module.exports = function(bot) {
           bot.sendMessage(
             userId,
             "Sorry, I can't add this group to your list. Possible causes are:\n" +
-              '1. I am not a member of this group\n' +
-              "2. A group with the specified ID doesn't exist",
+              "1. I am not a member of this group\n" +
+              "2. A group with the specified ID doesn't exist"
           );
-        },
+        }
       );
     }
   });
 
   bot.onText(/^\/stopResending$/, function(msg) {
-    if (msg.chat.type === 'private') {
+    if (msg.chat.type === "private") {
       let userId = msg.from.id;
       if (!(userId in DB.data)) return;
-      generateChatsKeyboardForUser('GroupToRemove', userId).then(keyboard =>
+      generateChatsKeyboardForUser("GroupToRemove", userId).then(keyboard =>
         bot.sendMessage(
           userId,
           keyboard.length > 0
-            ? 'Which group do you want to delete?'
+            ? "Which group do you want to delete?"
             : "Sorry, I can't find existant groups in your list.",
-          { reply_markup: { inline_keyboard: keyboard } },
-        ),
+          { reply_markup: { inline_keyboard: keyboard } }
+        )
       );
     }
   });
 
-  bot.on('callback_query', query => {
-    if (!query.data.startsWith('GroupToRemove')) return;
+  bot.on("callback_query", query => {
+    if (!query.data.startsWith("GroupToRemove")) return;
 
     let args = query.data.split(/\s+/);
 
@@ -86,15 +86,15 @@ module.exports = function(bot) {
     delete userChats[chatId];
     DB.write();
 
-    generateChatsKeyboardForUser('GroupToRemove', userId).then(keyboard =>
+    generateChatsKeyboardForUser("GroupToRemove", userId).then(keyboard =>
       editMessage(
         userId,
         msgId,
         keyboard.length > 0
-          ? 'Which group do you want to delete?'
-          : 'No more groups left.',
-        { reply_markup: { inline_keyboard: keyboard } },
-      ),
+          ? "Which group do you want to delete?"
+          : "No more groups left.",
+        { reply_markup: { inline_keyboard: keyboard } }
+      )
     );
   });
 
@@ -103,12 +103,12 @@ module.exports = function(bot) {
     myUserId = user.id;
   });
 
-  bot.on('new_chat_members', function(msg) {
+  bot.on("new_chat_members", function(msg) {
     if (myUserId != null) {
       if (msg.new_chat_members.find(member => member.id === myUserId)) {
         let chatId = msg.chat.id;
         bot.sendMessage(chatId, `chat ID: \`${chatId}\``, {
-          parse_mode: 'Markdown',
+          parse_mode: "Markdown"
         });
       }
     }

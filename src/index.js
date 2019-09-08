@@ -1,30 +1,31 @@
-const TelegramBot = require('node-telegram-bot-api');
-const config = require('../config');
+const TelegramBot = require("node-telegram-bot-api");
+const config = require("../config");
 const bot = new TelegramBot(config.token, { polling: true });
 
-const DB = require('./database');
-const utils = require('./utils');
-require('./groups')(bot);
-require('./filter')(bot);
+const DB = require("./database");
+const utils = require("./utils");
+require("./groups")(bot);
+require("./filter")(bot);
 
 const COMMANDS = [
-  '/startResending SPACE <id>',
-  '/startResending',
-  '/setOption',
-  '/deleteUser',
-  '/stopResending',
+  "/startResending SPACE <id>",
+  "/startResending",
+  "/setOption",
+  "/deleteUser",
+  "/stopResending"
 ];
 
 bot.onText(/^\/(start|help)$/, msg => {
   if (!utils.checkPrivateChat(bot, msg)) return;
 
   const chatId = msg.chat.id;
-  let comandsPack = COMMANDS.join('\n');
-  bot.sendMessage(chatId, 'Commands list:\n' + comandsPack);
+  let comandsPack = COMMANDS.join("\n");
+  bot.sendMessage(chatId, "Commands list:\n" + comandsPack);
 });
 
-bot.on('message', msg => {
-  if (!msg.chat.type === 'group' || msg.chat.type === 'supergroup') return;
+bot.on("message", msg => {
+  console.log(msg.chat.type);
+  if (!(msg.chat.type === "group" || msg.chat.type === "supergroup")) return;
 
   const chatId = msg.chat.id;
   const msgId = msg.message_id;
@@ -45,4 +46,4 @@ bot.on('message', msg => {
   });
 });
 
-bot.on('polling_error', msg => console.log(msg));
+bot.on("polling_error", msg => console.log(msg));
